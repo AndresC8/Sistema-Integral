@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from exceptions.excepciones import ErrorDatosInvalidos
 from utils.logger import registrar_error, registrar_info
 
 
@@ -38,8 +39,7 @@ class Entidad(ABC):
                 self._registrar_error_validacion("El id numerico de la entidad debe ser mayor que cero.")
         else:
             self._registrar_error_validacion(
-                "El id de la entidad debe ser texto o numero entero.",
-                TypeError,
+                "El id de la entidad debe ser texto o numero entero."
             )
 
         self._id = valor
@@ -51,7 +51,7 @@ class Entidad(ABC):
     @nombre.setter
     def nombre(self, valor):
         if not isinstance(valor, str):
-            self._registrar_error_validacion("El nombre de la entidad debe ser texto.", TypeError)
+            self._registrar_error_validacion("El nombre de la entidad debe ser texto.")
 
         valor = valor.strip()
         if not valor:
@@ -66,7 +66,7 @@ class Entidad(ABC):
     @activo.setter
     def activo(self, valor):
         if not isinstance(valor, bool):
-            self._registrar_error_validacion("El estado activo debe ser booleano.", TypeError)
+            self._registrar_error_validacion("El estado activo debe ser booleano.")
 
         self._activo = valor
 
@@ -88,6 +88,9 @@ class Entidad(ABC):
         """Valida las reglas especificas de la entidad derivada."""
         pass
 
-    def _registrar_error_validacion(self, mensaje, tipo_error=ValueError):
+    def _registrar_error_validacion(self, mensaje, tipo_error=ErrorDatosInvalidos):
         registrar_error(f"{self.__class__.__name__}: {mensaje}")
-        raise tipo_error(mensaje)
+        raise tipo_error(
+            mensaje,
+            contexto={"entidad": self.__class__.__name__},
+        )
