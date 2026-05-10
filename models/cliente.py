@@ -10,6 +10,13 @@ class Cliente(Entidad):
 
     _PATRON_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     _PATRON_DOCUMENTO = re.compile(r"^[A-Za-z0-9-]+$")
+    _MIN_DOCUMENTO = 5
+    _MAX_DOCUMENTO = 20
+    _MIN_NOMBRE = 3
+    _MAX_NOMBRE = 80
+    _MAX_CORREO = 120
+    _MIN_TELEFONO = 7
+    _MAX_TELEFONO = 15
 
     def __init__(self, documento, nombre, correo, telefono, activo=True):
         self._documento = None
@@ -42,7 +49,13 @@ class Cliente(Entidad):
 
     @documento.setter
     def documento(self, valor):
-        valor = self._normalizar_texto(valor, "documento")
+        valor = self._normalizar_texto(valor, "documento", permitir_entero=True)
+        self._validar_longitud(
+            valor,
+            "documento",
+            self._MIN_DOCUMENTO,
+            self._MAX_DOCUMENTO,
+        )
 
         if not self._PATRON_DOCUMENTO.match(valor):
             self._registrar_error_cliente(
@@ -53,12 +66,23 @@ class Cliente(Entidad):
         self.id = valor
 
     @property
+    def nombre(self):
+        return self._nombre
+
+    @nombre.setter
+    def nombre(self, valor):
+        valor = self._normalizar_texto(valor, "nombre")
+        self._validar_longitud(valor, "nombre", self._MIN_NOMBRE, self._MAX_NOMBRE)
+        self._nombre = valor
+
+    @property
     def correo(self):
         return self._correo
 
     @correo.setter
     def correo(self, valor):
         valor = self._normalizar_texto(valor, "correo").lower()
+        self._validar_longitud(valor, "correo", longitud_maxima=self._MAX_CORREO)
 
         if not self._PATRON_CORREO.match(valor):
             self._registrar_error_cliente("El correo electronico no tiene un formato valido.")
@@ -71,24 +95,60 @@ class Cliente(Entidad):
 
     @telefono.setter
     def telefono(self, valor):
-        valor = self._normalizar_texto(valor, "telefono")
+        valor = self._normalizar_texto(valor, "telefono", permitir_entero=True)
 
         if not valor.isdigit():
             self._registrar_error_cliente("El telefono debe contener solo numeros.")
 
-        if len(valor) < 7 or len(valor) > 15:
-            self._registrar_error_cliente("El telefono debe tener entre 7 y 15 digitos.")
+        self._validar_longitud(
+            valor,
+            "telefono",
+            self._MIN_TELEFONO,
+            self._MAX_TELEFONO,
+        )
 
         self._telefono = valor
 
     def actualizar_contacto(self, correo=None, telefono=None):
-        if correo is not None:
-            self.correo = correo
+        self.actualizar_datos(correo=correo, telefono=telefono)
 
-        if telefono is not None:
-            self.telefono = telefono
+    def actualizar_datos(self, nombre=None, correo=None, telefono=None, activo=None):
+        try:
+            cambios = []
 
-        registrar_info(f"Contacto actualizado para cliente documento={self.documento}")
+            if nombre is not None:
+                self.nombre = nombre
+                cambios.append("nombre")
+
+            if correo is not None:
+                self.correo = correo
+                cambios.append("correo")
+
+            if telefono is not None:
+                self.telefono = telefono
+                cambios.append("telefono")
+
+            if activo is not None:
+                self.activo = activo
+                cambios.append("activo")
+
+            if not cambios:
+                self._registrar_error_cliente("Debe indicar al menos un dato para actualizar.")
+
+            self.validar()
+        except ErrorValidacion:
+            raise
+        except Exception as error:
+            registrar_error(f"No fue posible actualizar el cliente: {error}")
+            raise ErrorCliente(
+                "No fue posible actualizar el cliente.",
+                contexto={"documento": self.documento},
+            ) from error
+        else:
+            registrar_info(
+                f"Cliente actualizado: documento={self.documento}, "
+                f"campos={', '.join(cambios)}"
+            )
 
     def describir(self):
         return (
@@ -111,14 +171,14 @@ class Cliente(Entidad):
 
         return True
 
-    def _normalizar_texto(self, valor, campo):
+    def _normalizar_texto(self, valor, campo, permitir_entero=False):
         if valor is None:
             self._registrar_error_cliente(f"El campo {campo} es obligatorio.")
 
         if isinstance(valor, bool):
             self._registrar_error_cliente(f"El campo {campo} debe ser texto.")
 
-        if isinstance(valor, int):
+        if permitir_entero and isinstance(valor, int):
             valor = str(valor)
         elif not isinstance(valor, str):
             self._registrar_error_cliente(f"El campo {campo} debe ser texto.")
@@ -128,6 +188,25 @@ class Cliente(Entidad):
             self._registrar_error_cliente(f"El campo {campo} no puede estar vacio.")
 
         return valor
+
+    def _validar_longitud(
+        self,
+        valor,
+        campo,
+        longitud_minima=None,
+        longitud_maxima=None,
+    ):
+        longitud = len(valor)
+
+        if longitud_minima is not None and longitud < longitud_minima:
+            self._registrar_error_cliente(
+                f"El campo {campo} debe tener al menos {longitud_minima} caracteres."
+            )
+
+        if longitud_maxima is not None and longitud > longitud_maxima:
+            self._registrar_error_cliente(
+                f"El campo {campo} no puede superar {longitud_maxima} caracteres."
+            )
 
     def _registrar_error_cliente(self, mensaje):
         registrar_error(f"Cliente: {mensaje}")

@@ -30,6 +30,11 @@ class Entidad(ABC):
         if valor is None:
             self._registrar_error_validacion("El id de la entidad es obligatorio.")
 
+        if isinstance(valor, bool):
+            self._registrar_error_validacion(
+                "El id de la entidad debe ser texto o numero entero."
+            )
+
         if isinstance(valor, str):
             valor = valor.strip()
             if not valor:
