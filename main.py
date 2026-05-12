@@ -4,31 +4,39 @@ from utils.logger import registrar_error, registrar_info
 
 
 def ejecutar_operacion(nombre_operacion, operacion):
+    """Ejecuta una funcion de forma segura, manejando errores de sistema y genericos."""
     print(f"\n--- {nombre_operacion} ---")
 
     try:
+        # Intenta ejecutar la accion principal
         resultado = operacion()
     except ErrorSistema as error:
+        # Maneja errores espesificos del negocio o sistema
+
         mensaje = f"Operacion controlada con error: {error}"
         print(mensaje)
         registrar_error(f"{nombre_operacion}: {error}")
         return None
     except Exception as error:
+        # captura cualquier otro fallo inesperado
         mensaje = f"Error inesperado controlado: {error}"
         print(mensaje)
         registrar_error(f"{nombre_operacion}: {error}")
         return None
     else:
+        # si no hubo errores, confirma el exito y retorna el dato
         print("Operacion exitosa.")
         registrar_info(f"{nombre_operacion}: operacion exitosa")
         return resultado
     finally:
+        # Garantiza que este mensaje salga siempre
         print("La aplicacion continua en ejecucion.")
 
 
 def simular_clientes():
-    clientes = []
+    clientes = [] # base de datos temporal
 
+    # caso 1: registro de cliente exitoso
     cliente_valido = ejecutar_operacion(
         "Registrar cliente valido",
         lambda: Cliente(
@@ -38,9 +46,12 @@ def simular_clientes():
             telefono="3001234567",
         ),
     )
+    # guarda el cliente si la operacion fue exitosa
     if cliente_valido is not None:
         clientes.append(cliente_valido)
 
+    # caso 2: prueba de validacion de datos
+    # Valida que el sistema bloquee registros sin numero de documento
     ejecutar_operacion(
         "Rechazar cliente con documento vacio",
         lambda: Cliente(
@@ -51,6 +62,7 @@ def simular_clientes():
         ),
     )
 
+    # Valida la longitud minima del documento (caso de prueba: "A1")
     ejecutar_operacion(
         "Rechazar cliente con documento muy corto",
         lambda: Cliente(
@@ -61,6 +73,7 @@ def simular_clientes():
         ),
     )
 
+    # Valida la longitud minima del nombre (caso de prueba: "Lu")
     ejecutar_operacion(
         "Rechazar cliente con nombre muy corto",
         lambda: Cliente(
@@ -70,7 +83,8 @@ def simular_clientes():
             telefono="3112223344",
         ),
     )
-
+ 
+    # Rechazar cliente con correo invalido
     ejecutar_operacion(
         "Rechazar cliente con correo invalido",
         lambda: Cliente(
@@ -81,6 +95,7 @@ def simular_clientes():
         ),
     )
 
+    # Rechazar cliente con telefono no numerico
     ejecutar_operacion(
         "Rechazar cliente con telefono no numerico",
         lambda: Cliente(
