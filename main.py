@@ -241,7 +241,7 @@ def simular_reservas(clientes, servicios):
             lambda: r1.cancelar(),
         )
 
-    # Caso 4: Reserva cancelada antes de confirmar
+    # Caso 4: Reserva cancelada antes de confirma
     r3 = ejecutar_operacion(
         "Crear reserva de asesoria",
         lambda: Reserva("R003", cliente, asesoria, 1),
