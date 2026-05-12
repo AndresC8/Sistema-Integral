@@ -256,7 +256,7 @@ def simular_reservas(clientes, servicios):
             lambda: r3.confirmar(),
         )
 
-    # Caso 5: Reserva con duracion invalida
+    # Caso 5: Reserva con duracion invalid
     ejecutar_operacion(
         "Rechazar reserva con duracion negativa",
         lambda: Reserva("R004", cliente, sala, -5),
